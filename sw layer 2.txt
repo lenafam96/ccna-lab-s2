@@ -1,0 +1,227 @@
+----------------sw0----------------
+ena
+conf t
+host sw0
+vlan 10
+name Faculty
+exit
+vlan 20
+name Student
+exit
+vlan 30
+name Guest
+exit
+int g0/1
+sw mo a
+sw a vlan 10
+exit
+int rang f0/1-24
+sw mo trunk
+exit
+vtp domain bkacad
+vtp mod server
+vtp pass 123
+vtp ver 2
+
+span mo p
+span vlan 10 p 4096
+
+
+int rang f0/22-24
+channel-gr 1 mo on
+exit
+int po 1
+sw mo trunk
+exit
+int rang f0/16-18
+channel-gr 2 mo on
+exit
+int po 2
+sw mo trunk
+exit
+int rang f0/1-5
+channel-gr 4 mo on
+exit
+int po 4
+sw mo trunk
+exit
+do wr
+----------------sw1----------------
+ena
+conf t
+host sw1
+vlan 10
+name Faculty
+exit
+vlan 20
+name Student
+exit
+vlan 30
+name Guest
+exit
+int f0/1
+sw mo a
+sw a vlan 10
+exit
+int f0/2
+sw mo a
+sw a vlan 20
+exit
+int f0/3
+sw mo a
+sw a vlan 30
+exit
+int rang f0/16-24
+sw mo trunk
+exit
+vtp domain bkacad
+vtp mod client
+vtp pass 123
+vtp ver 2
+
+span mo p
+span vlan 10 p 8192
+span vlan 20 p 4096
+span vlan 30 p 4096
+
+int rang f0/22-24
+channel-gr 1 mo on
+exit
+int po 1
+sw mo trunk
+exit
+int rang f0/19-21
+channel-gr 3 mo on
+exit
+int po 3
+sw mo trunk
+sw trunk allow vlan 20
+exit
+do wr
+----------------sw2----------------
+ena
+conf t
+host sw2
+vlan 10
+name Faculty
+exit
+vlan 20
+name Student
+exit
+vlan 30
+name Guest
+exit
+int f0/1
+sw mo a
+sw a vlan 10
+ex
+int f0/2
+sw mo a
+sw a vlan 20
+ex
+int f0/3
+sw mo a
+sw a vlan 30
+ex
+int rang f0/16-24
+sw mo trunk
+ex
+vtp domain bkacad
+vtp mod client
+vtp pass 123
+vtp ver 2
+
+span mo p
+span vlan 20 p 8192
+span vlan 30 p 8192
+
+int rang f0/16-18
+channel-gr 2 mo on
+exit
+int po 2
+sw mo trunk
+exit
+int rang f0/19-21
+channel-gr 3 mo on
+exit
+int po 3
+sw mo trunk
+sw trunk allow vlan 20
+exit
+do wr
+-------------sw-layer3-------------
+ena
+conf t
+vtp mode client
+vtp domain bkacad
+vtp pass 123
+vtp ver 2
+int vlan 10
+ip add 172.17.10.1 255.255.255.0
+ex
+int vlan 20
+ip add 172.17.20.1 255.255.255.0
+ip help 172.17.10.2
+ex
+int vlan 30
+ip add 172.17.30.1 255.255.255.0
+ip help 172.17.10.2
+ex
+
+ip routing
+
+int rang f0/1-24
+sw trunk enc dot1q
+sw mo trunk
+ex
+
+int rang f0/1-5
+channel-gr 4 mo on
+exit
+int po 4
+sw mo trunk
+exit
+do wr
+
+----------------r1----------------
+ena
+conf t
+host r1
+int g0/0
+ip add 172.17.10.2 255.255.255.0
+no shut
+ex
+ip route 172.17.20.0 255.255.255.0 172.17.10.1
+ip route 172.17.30.0 255.255.255.0 172.17.10.1
+service dhcp
+ip dhcp ex 172.17.10.1 172.17.10.20
+ip dhcp pool VLAN-POOL-10
+net 172.17.10.0 255.255.255.0
+def 172.17.10.1
+dns 1.1.1.1
+do bkacad.com
+exit
+service dhcp
+ip dhcp ex 172.17.20.1 172.17.20.20
+ip dhcp pool VLAN-POOL-20
+net 172.17.20.0 255.255.255.0
+def 172.17.20.1
+dns 1.1.1.1
+do bkacad.com
+exit
+service dhcp
+ip dhcp ex 172.17.30.1 172.17.30.20
+ip dhcp pool VLAN-POOL-30
+net 172.17.30.0 255.255.255.0
+def 172.17.30.1
+dns 1.1.1.1
+do bkacad.com
+exit
+do wr
+--------------factory reset--------------
+delete flash:vlan.dat
+
+erase start
+
+
+reload
